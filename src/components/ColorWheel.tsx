@@ -30,8 +30,8 @@ export function ColorWheel({
   onModeChange
 }: ColorWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [selectedColor1, setSelectedColor1] = useState(color1);
-  const [selectedColor2, setSelectedColor2] = useState(color2);
+  const [localColor1, setLocalColor1] = useState(color1);
+  const [localColor2, setLocalColor2] = useState(color2);
   const [activeSelector, setActiveSelector] = useState<'color1' | 'color2'>('color1');
   const [recommendations, setRecommendations] = useState<ColorRecommendation[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -75,25 +75,13 @@ export function ColorWheel({
 
   useEffect(() => {
     if (mode === 'recommended') {
-      const recs = getColorRecommendations(selectedColor1);
+      const recs = getColorRecommendations(localColor1);
       setRecommendations(recs);
       if (recs.length > 0 && recs[0].colors.length > 0) {
-        const recommendedColor = recs[0].colors[0];
-        setSelectedColor2(recommendedColor);
+        setLocalColor2(recs[0].colors[0]);
       }
     }
-  }, [selectedColor1, mode]);
-
-  useEffect(() => {
-    if (selectedColor1 !== color1 || selectedColor2 !== color2) {
-      onColorsChange(selectedColor1, selectedColor2);
-    }
-  }, [selectedColor1, selectedColor2, color1, color2, onColorsChange]);
-
-  useEffect(() => {
-    setSelectedColor1(color1);
-    setSelectedColor2(color2);
-  }, [color1, color2]);
+  }, [localColor1, mode]);
 
   const getColorFromPosition = (x: number, y: number) => {
     const angle = getAngleFromPoint(x, y, centerX, centerY);
@@ -114,6 +102,12 @@ export function ColorWheel({
       x: centerX + Math.cos(angle) * distance,
       y: centerY + Math.sin(angle) * distance
     };
+  };
+
+  const updateColors = (newColor1: string, newColor2: string) => {
+    setLocalColor1(newColor1);
+    setLocalColor2(newColor2);
+    onColorsChange(newColor1, newColor2);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -146,26 +140,27 @@ export function ColorWheel({
 
     if (mode === 'free') {
       if (activeSelector === 'color1') {
-        setSelectedColor1(color);
+        updateColors(color, localColor2);
       } else {
-        setSelectedColor2(color);
+        updateColors(localColor1, color);
       }
     } else {
-      setSelectedColor1(color);
       const recs = getColorRecommendations(color);
       setRecommendations(recs);
       if (recs.length > 0 && recs[0].colors.length > 0) {
-        setSelectedColor2(recs[0].colors[0]);
+        updateColors(color, recs[0].colors[0]);
+      } else {
+        updateColors(color, localColor2);
       }
     }
   };
 
   const selectRecommendation = (color: string) => {
-    setSelectedColor2(color);
+    updateColors(localColor1, color);
   };
 
-  const pos1 = getPositionFromColor(selectedColor1);
-  const pos2 = getPositionFromColor(selectedColor2);
+  const pos1 = getPositionFromColor(localColor1);
+  const pos2 = getPositionFromColor(localColor2);
 
   return (
     <div className="space-y-6">
@@ -213,8 +208,8 @@ export function ColorWheel({
             style={{
               left: pos1.x,
               top: pos1.y,
-              backgroundColor: selectedColor1,
-              boxShadow: `0 0 0 2px white, 0 0 0 4px ${selectedColor1}`
+              backgroundColor: localColor1,
+              boxShadow: `0 0 0 2px white, 0 0 0 4px ${localColor1}`
             }}
           />
 
@@ -223,8 +218,8 @@ export function ColorWheel({
             style={{
               left: pos2.x,
               top: pos2.y,
-              backgroundColor: selectedColor2,
-              boxShadow: `0 0 0 2px white, 0 0 0 4px ${selectedColor2}`
+              backgroundColor: localColor2,
+              boxShadow: `0 0 0 2px white, 0 0 0 4px ${localColor2}`
             }}
           />
         </div>
@@ -235,19 +230,17 @@ export function ColorWheel({
               <div className="flex items-center gap-3">
                 <div
                   className={`w-12 h-12 rounded-xl border-2 cursor-pointer transition-all ${activeSelector === 'color1' ? 'border-primary shadow-md scale-105' : 'border-border'}`}
-                  style={{ backgroundColor: selectedColor1 }}
+                  style={{ backgroundColor: localColor1 }}
                   onClick={() => setActiveSelector('color1')}
                 />
                 <div className="flex-1">
                   <p className="text-sm font-medium">Color 1</p>
-                  <p className="text-xs font-mono text-muted-foreground">{selectedColor1.toUpperCase()}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{localColor1.toUpperCase()}</p>
                 </div>
                 <input
                   type="color"
-                  value={selectedColor1}
-                  onChange={(e) => {
-                    setSelectedColor1(e.target.value);
-                  }}
+                  value={localColor1}
+                  onChange={(e) => updateColors(e.target.value, localColor2)}
                   className="w-10 h-10 rounded-lg cursor-pointer border border-border"
                 />
               </div>
@@ -255,19 +248,17 @@ export function ColorWheel({
               <div className="flex items-center gap-3">
                 <div
                   className={`w-12 h-12 rounded-xl border-2 cursor-pointer transition-all ${activeSelector === 'color2' ? 'border-primary shadow-md scale-105' : 'border-border'}`}
-                  style={{ backgroundColor: selectedColor2 }}
+                  style={{ backgroundColor: localColor2 }}
                   onClick={() => setActiveSelector('color2')}
                 />
                 <div className="flex-1">
                   <p className="text-sm font-medium">Color 2</p>
-                  <p className="text-xs font-mono text-muted-foreground">{selectedColor2.toUpperCase()}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{localColor2.toUpperCase()}</p>
                 </div>
                 <input
                   type="color"
-                  value={selectedColor2}
-                  onChange={(e) => {
-                    setSelectedColor2(e.target.value);
-                  }}
+                  value={localColor2}
+                  onChange={(e) => updateColors(localColor1, e.target.value)}
                   className="w-10 h-10 rounded-lg cursor-pointer border border-border"
                 />
               </div>
@@ -279,17 +270,23 @@ export function ColorWheel({
               <div className="flex items-center gap-3">
                 <div
                   className="w-12 h-12 rounded-xl border-2 border-primary shadow-md"
-                  style={{ backgroundColor: selectedColor1 }}
+                  style={{ backgroundColor: localColor1 }}
                 />
                 <div className="flex-1">
                   <p className="text-sm font-medium">Selected Color</p>
-                  <p className="text-xs font-mono text-muted-foreground">{selectedColor1.toUpperCase()}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{localColor1.toUpperCase()}</p>
                 </div>
                 <input
                   type="color"
-                  value={selectedColor1}
+                  value={localColor1}
                   onChange={(e) => {
-                    setSelectedColor1(e.target.value);
+                    const recs = getColorRecommendations(e.target.value);
+                    setRecommendations(recs);
+                    if (recs.length > 0 && recs[0].colors.length > 0) {
+                      updateColors(e.target.value, recs[0].colors[0]);
+                    } else {
+                      updateColors(e.target.value, localColor2);
+                    }
                   }}
                   className="w-10 h-10 rounded-lg cursor-pointer border border-border"
                 />
@@ -305,11 +302,11 @@ export function ColorWheel({
                         <button
                           key={colorIdx}
                           onClick={() => selectRecommendation(color)}
-                          className={`relative w-12 h-12 rounded-xl border-2 transition-all hover:scale-105 ${selectedColor2 === color ? 'border-primary shadow-md' : 'border-border'}`}
+                          className={`relative w-12 h-12 rounded-xl border-2 transition-all hover:scale-105 ${localColor2 === color ? 'border-primary shadow-md' : 'border-border'}`}
                           style={{ backgroundColor: color }}
                           title={color.toUpperCase()}
                         >
-                          {selectedColor2 === color && (
+                          {localColor2 === color && (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Check className="w-4 h-4 text-white drop-shadow-lg" />
                             </div>
@@ -327,11 +324,11 @@ export function ColorWheel({
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
               <div
                 className="w-16 h-12 rounded-lg"
-                style={{ background: `linear-gradient(135deg, ${selectedColor1}, ${selectedColor2})` }}
+                style={{ background: `linear-gradient(135deg, ${localColor1}, ${localColor2})` }}
               />
               <div className="flex-1">
                 <p className="text-xs font-medium">Preview</p>
-                <p className="text-[10px] text-muted-foreground font-mono">{selectedColor1} → {selectedColor2}</p>
+                <p className="text-[10px] text-muted-foreground font-mono">{localColor1} → {localColor2}</p>
               </div>
             </div>
           </div>
