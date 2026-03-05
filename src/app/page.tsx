@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { useGradientGenerator } from '@/hooks/useGradientGenerator';
 import { colorPresets } from '@/lib/constants';
 import { colorToParam } from '@/lib/utils';
-import { Download, RefreshCw, Plus, Trash2, Palette, Sparkles, Layers, Code, Zap } from 'lucide-react';
+import { ColorWheel } from '@/components/ColorWheel';
+import { Download, RefreshCw, Plus, Trash2, Palette, Sparkles, Layers, Code, Zap, Sliders } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function GradientGenerator() {
@@ -26,6 +27,7 @@ export default function GradientGenerator() {
   const [newColor, setNewColor] = useState('');
   const [apiLinkCopied, setApiLinkCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showColorList, setShowColorList] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -131,6 +133,27 @@ export default function GradientGenerator() {
               </div>
             </div>
 
+            {/* Current Colors Display */}
+            <div className="bg-card rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-sm">当前使用的颜色</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{colors.length} 种</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {colors.map((color, index) => (
+                  <div
+                    key={index}
+                    className="w-10 h-10 rounded-lg border border-border shadow-sm"
+                    style={{ backgroundColor: color }}
+                    title={color.toUpperCase()}
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4">
                <Button 
                 onClick={downloadGradient} 
@@ -175,6 +198,18 @@ export default function GradientGenerator() {
           {/* Right Column: Controls */}
           <div className="lg:col-span-5 space-y-8">
             
+            {/* Color Wheel Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-border">
+                 <Palette className="w-5 h-5 text-primary" />
+                 <h2 className="font-display font-semibold text-lg">色彩选择</h2>
+              </div>
+              <ColorWheel 
+                colors={colors} 
+                onColorsChange={setColors}
+              />
+            </div>
+
             {/* Dimensions */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-border">
@@ -209,74 +244,81 @@ export default function GradientGenerator() {
               </div>
             </div>
 
-            {/* Colors */}
+            {/* Manual Color List (Collapsible) */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-border">
+              <button
+                onClick={() => setShowColorList(!showColorList)}
+                className="flex items-center justify-between w-full pb-2 border-b border-border hover:text-primary transition-colors"
+              >
                 <div className="flex items-center gap-2">
-                  <Palette className="w-5 h-5 text-primary" />
-                  <h2 className="font-display font-semibold text-lg">Colors</h2>
+                  <Sliders className="w-5 h-5 text-primary" />
+                  <h2 className="font-display font-semibold text-lg">手动调整颜色</h2>
                 </div>
-                <span className="text-xs font-mono bg-muted px-2 py-1 rounded-md text-muted-foreground">
-                  {colors.length}/8
+                <span className="text-xs text-muted-foreground">
+                  {showColorList ? '收起' : '展开'}
                 </span>
-              </div>
+              </button>
               
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {colors.map((color, index) => (
-                  <div key={index} className="flex items-center gap-3 group">
-                    <div className="relative flex-shrink-0">
-                       <Input
-                        type="color"
-                        value={color}
-                        onChange={(e) => handleColorChange(index, e.target.value)}
-                        className="w-12 h-12 p-1 rounded-xl cursor-pointer border-2 hover:border-primary transition-colors"
-                      />
-                    </div>
-                    <Input
-                      type="text"
-                      value={color.toUpperCase()}
-                      onChange={(e) => handleColorChange(index, e.target.value)}
-                      className="font-mono text-sm tracking-wider uppercase"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeColor(index)}
-                      disabled={colors.length <= 1}
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+              {showColorList && (
+                <>
+                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                    {colors.map((color, index) => (
+                      <div key={index} className="flex items-center gap-3 group">
+                        <div className="relative flex-shrink-0">
+                           <Input
+                            type="color"
+                            value={color}
+                            onChange={(e) => handleColorChange(index, e.target.value)}
+                            className="w-12 h-12 p-1 rounded-xl cursor-pointer border-2 hover:border-primary transition-colors"
+                          />
+                        </div>
+                        <Input
+                          type="text"
+                          value={color.toUpperCase()}
+                          onChange={(e) => handleColorChange(index, e.target.value)}
+                          className="font-mono text-sm tracking-wider uppercase"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeColor(index)}
+                          disabled={colors.length <= 1}
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-               {colors.length < 8 && (
-                <div className="flex items-center gap-3 pt-2">
-                   <div className="relative flex-shrink-0">
-                      <Input
-                        type="color"
-                        value={newColor || '#000000'}
-                        onChange={(e) => setNewColor(e.target.value)}
-                         className="w-12 h-12 p-1 rounded-xl cursor-pointer border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
-                      />
-                   </div>
-                   <Input
-                      type="text"
-                      placeholder="#000000"
-                      value={newColor.toUpperCase()}
-                      onChange={(e) => setNewColor(e.target.value)}
-                      className="font-mono text-sm tracking-wider uppercase"
-                    />
-                   <Button 
-                    onClick={addColor}
-                    disabled={!newColor}
-                    className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-               )}
+                   {colors.length < 8 && (
+                    <div className="flex items-center gap-3 pt-2">
+                       <div className="relative flex-shrink-0">
+                          <Input
+                            type="color"
+                            value={newColor || '#000000'}
+                            onChange={(e) => setNewColor(e.target.value)}
+                             className="w-12 h-12 p-1 rounded-xl cursor-pointer border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+                          />
+                       </div>
+                       <Input
+                          type="text"
+                          placeholder="#000000"
+                          value={newColor.toUpperCase()}
+                          onChange={(e) => setNewColor(e.target.value)}
+                          className="font-mono text-sm tracking-wider uppercase"
+                        />
+                       <Button 
+                        onClick={addColor}
+                        disabled={!newColor}
+                        className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                   )}
+                </>
+              )}
             </div>
 
             {/* Presets */}
